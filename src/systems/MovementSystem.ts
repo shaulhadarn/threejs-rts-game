@@ -1,5 +1,6 @@
 import { System } from '../ecs/System';
 import { World } from '../ecs/World';
+import { Entity } from '../ecs/Entity';
 import { MovementComponent } from '../ecs/components/MovementComponent';
 import { TransformComponent } from '../ecs/components/TransformComponent';
 import * as THREE from 'three';
@@ -8,7 +9,12 @@ import * as THREE from 'three';
  * MovementSystem handles unit movement to target positions
  * Uses simple linear interpolation for smooth movement
  */
-export class MovementSystem extends System {
+export class MovementSystem implements System {
+  requiredComponents = ['Movement' as const, 'Transform' as const];
+  enabled = true;
+  priority = 1;
+
+  private world: World;
   private scene: THREE.Scene;
   private camera: THREE.Camera;
   private renderer: THREE.WebGLRenderer;
@@ -18,7 +24,7 @@ export class MovementSystem extends System {
   private selectionSystem: any; // Will be injected
 
   constructor(world: World, scene: THREE.Scene, camera: THREE.Camera, renderer: THREE.WebGLRenderer) {
-    super(world);
+    this.world = world;
     this.scene = scene;
     this.camera = camera;
     this.renderer = renderer;
@@ -107,11 +113,9 @@ export class MovementSystem extends System {
     }
   }
 
-  update(deltaTime: number): void {
-    // Update all entities with movement components
-    const movingEntities = this.world.getEntitiesWithComponent('Movement');
-    
-    for (const entity of movingEntities) {
+  update(deltaTime: number, entities: Entity[]): void {
+    // Update all entities with movement components (provided by SystemManager)
+    for (const entity of entities) {
       const movement = entity.getComponent<MovementComponent>('Movement');
       const transform = entity.getComponent<TransformComponent>('Transform');
       
