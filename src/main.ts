@@ -9,9 +9,9 @@ import { UnitFactory } from './factories/UnitFactory';
 import { ResourceFactory } from './factories/ResourceFactory';
 import { GatheringComponent } from './ecs/components/GatheringComponent';
 
-// ============================================================
+// ================================================================
 // ON-SCREEN DIAGNOSTIC OVERLAY
-// ============================================================
+// ================================================================
 
 interface DiagnosticMessage {
     status: 'success' | 'error' | 'pending';
@@ -87,8 +87,8 @@ class DiagnosticOverlay {
                 color = '#4CAF50';
                 break;
             case 'error':
-                icon = '[✗]';
-                color = '#FF5252';
+                icon = '[✕]';
+                color = '#F44336';
                 this.hasErrors = true;
                 break;
             case 'pending':
@@ -99,15 +99,16 @@ class DiagnosticOverlay {
 
         item.innerHTML = `<span style="color: ${color}">${icon}</span> ${message}`;
 
-        if (error && status === 'error') {
+        if (error) {
             const errorDetail = document.createElement('div');
             errorDetail.style.cssText = `
-                margin-left: 20px;
-                font-size: 10px;
                 color: #FF5252;
+                font-size: 10px;
+                margin-left: 20px;
                 white-space: pre-wrap;
+                word-break: break-word;
             `;
-            errorDetail.textContent = error?.toString() || 'Unknown error';
+            errorDetail.textContent = typeof error === 'string' ? error : error?.message || JSON.stringify(error, null, 2);
             item.appendChild(errorDetail);
         }
 
@@ -117,166 +118,242 @@ class DiagnosticOverlay {
     updateFPS(fps: number) {
         this.fpsDisplay.textContent = `FPS: ${fps.toFixed(1)}`;
     }
+
+    hasReportedErrors(): boolean {
+        return this.hasErrors;
+    }
 }
+
+// ================================================================
+// Global Error Handler
+// ================================================================
 
 const diagnostic = new DiagnosticOverlay();
 
-const gameResources = {
-    gold: 100,
-    wood: 50,
-};
-
-// ============================================================
-// SCENE SETUP
-// ============================================================
-
-diagnostic.log('pending', 'Setting up Three.js scene...');
-
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-document.body.appendChild(renderer.domElement);
-
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x87CEEB);
-
-const camera = new THREE.PerspectiveCamera(
-        75,
-        window.innerWidth / window.innerHeight,
-        0.1,
-        1000
-);
-camera.position.set(10, 10, 10);
-camera.lookAt(0, 0, 0);
-
-// Add lights
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-scene.add(ambientLight);
-
-const directionalLight = new THREE.DirectionalLight(0xffffff, 0.7);
-directionalLight.position.set(50, 50, 50);
-directionalLight.castShadow = true;
-directionalLight.shadow.mapSize.width = 2048;
-directionalLight.shadow.mapSize.height = 2048;
-directionalLight.shadow.camera.near = 0.1;
-directionalLight.shadow.camera.far = 200;
-directionalLight.shadow.camera.left = -30;
-directionalLight.shadow.camera.right = 30;
-directionalLight.shadow.camera.top = 30;
-directionalLight.shadow.camera.bottom = -30;
-scene.add(directionalLight);
-
-// Ground plane
-const groundGeometry = new THREE.PlaneGeometry(100, 100);
-const groundMaterial = new THREE.MeshStandardMaterial({ 
-        color: 0x669054, 
-        roughness: 0.8,
-        metalness: 0.2,
+window.addEventListener('error', (event) => {
+    diagnostic.log('error', `Uncaught exception: ${event.message}`, event.error || event.message);
 });
 
-const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-ground.rotation.x = -Math.PI / 2;
-ground.receiveShadow = true;
-ground.name = 'ground';
-scene.add(ground);
+window.addEventListener('unhandledrejection', (event) => {
+    diagnostic.log('error', 'Unhandled Promise Rejection', event.reason);
+});
 
-diagnostic.log('success', 'Three.js scene created');
+// ================================================================
+// Main Game Initialization
+// ================================================================
 
-// ============================================================
-// ECS SETUP
-// ============================================================
+diagnostic.log('pending', 'Initializing Three.js RTS Game...');
 
-diagnostic.log('pending', 'Initializing ECS systems...');
-
-const world = new World();
-
-// Initialize systems
 try {
-        const selectionSystem = new SelectionSystem(world, scene, camera, renderer);
-        world.addSystem(selectionSystem);
-        diagnostic.log('success', 'SelectionSystem initialized');
+    diagnostic.log('pending', 'Creating scene, camera, and renderer...');
 
-        const movementSystem = new MovementSystem(world, scene, camera, renderer);
-        world.addSystem(movementSystem);
-        diagnostic.log('success', 'MovementSystem initialized');
+    // ================================================================
+    // Scene, Camera, and Renderer
+    // ================================================================
 
-        const resourceGatheringSystem = new ResourceGatheringSystem(world, scene);
-        world.addSystem(resourceGatheringSystem);
-        diagnostic.log('success', 'ResourceGatheringSystem initialized');
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(20, 20, 20);
+    camera.lookAt(0, 0, 0);
 
-        const buildingPlacementSystem = new BuildingPlacementSystem(world, scene, camera, renderer, gameResources);
-        world.addSystem(buildingPlacementSystem);
-        diagnostic.log('success', 'BuildingPlacementSystem initialized');
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
 
-        const productionSystem = new ProductionSystem(world, scene);
-        world.addSystem(productionSystem);
-        diagnostic.log('success', 'ProductionSystem initialized');
-} catch (error) {
-        diagnostic.log('error', 'FAILED to initialize systems', error);
-        throw error;
-}
+    diagnostic.log('success', 'Scene, camera, and renderer created');
 
-// ============================================================
-// SPAWN INITIAL ENTITIES
-// ============================================================
+    // ================================================================
+    // Lighting
+    // ================================================================
 
-diagnostic.log('pending', 'Spawning initial entities...');
+    const ambientLight = new THREE.AmbientLight(0x404040);
+    scene.add(ambientLight);
 
-// Add 3 units
-for (let i = 0; i < 3; i++) {
-        const unit = UnitFactory.createUnit(world, scene, i * 2, 3 * (i % 2));
-        world.addEntity(unit);
-}
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    directionalLight.position.set(50, 50, 50);
+    directionalLight.castShadow = true;
+    scene.add(directionalLight);
 
-diagnostic.log('success', '5 units created');
+    diagnostic.log('success', 'Lighting added to scene');
 
-// Add 5 resource nodes
-for(let i = 0; i < 5; i++) {
-        const x = (Math.random() - 0.5) * 40;
-        const z = (Math.random() - 0.5) * 40;
-        
-        const resourceType = Math.random() < 0.5 ? 'gold' : 'wood';
-        const resourceNode = ResourceFactory.createResource(world, scene, resourceType, x, z);
-        world.addEntity(resourceNode);
-}
+    // ================================================================
+    // Ground
+    // ================================================================
 
-diagnostic.log('success', '5 resource nodes created');
+    const groundGeometry = new THREE.PlaneGeometry(100, 100);
+    const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x338833, side: THREE.DoubleSide });
+    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+    ground.rotation.x = -Math.PI / 2;
+    ground.name = 'ground';
+    scene.add(ground);
 
-// ============================================================
-// GAME LOOP
-// ============================================================
+    diagnostic.log('success', 'Ground added to scene');
 
-diagnostic.log('success', 'All systems go!');
+    // ================================================================
+    // ECS World
+    // ================================================================
 
-let lastTime = performance.now();
-let frameTimes: number[] = [];
+    diagnostic.log('pending', 'Creating ECS world...');
+    const world = new World();
+    diagnostic.log('success', 'ECS world created');
 
-function animate() {
-        requestAnimationFrame(animate);
-    
-        const currentTime = performance.now();
-        const delta = (currentTime - lastTime) / 1000;
-        lastTime = currentTime;
-    
-        // Calculate FPS
-        frameTimes.push(delta);
-        if (frameTimes.length > 60) {
-            frameTimes.shift();
+    // ================================================================
+    // Game Resources
+    // ================================================================
+
+    const gameResources = { gold: 0, wood: 0 };
+    diagnostic.log('success', 'Game resources initialized');
+
+    // ================================================================
+    // UI
+    // ================================================================
+
+    diagnostic.log('pending', 'Creating UI...');
+
+    const resourceDisplay = document.createElement('div');
+    resourceDisplay.style.cssText = `
+        position: absolute;
+        top: 50%;
+        left: 10px;
+        color: white;
+        font-family: monospace;
+        font-size: 14px;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 10px;
+        border-radius: 5px;
+        z-index: 1000;
+    `;
+    document.body.appendChild(resourceDisplay);
+
+    function updateResourceDisplay() {
+        resourceDisplay.innerHTML = `
+            Gold: ${gameResources.gold}<br>
+            Wood: ${gameResources.wood}
+        `;
+    }
+    updateResourceDisplay();
+
+    const instructions = document.createElement('div');
+    instructions.style.cssText = `
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        color: white;
+        font-family: monospace;
+        font-size: 12px;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 10px;
+        border-radius: 5px;
+        z-index: 1000;
+    `;
+    instructions.innerHTML = `
+        Left Click: Select Unit<br>
+        Right Click: Move Selected Units<br>
+        'W', 'A', 'D': Move Camera<br>
+        'B': Building Mode<br>
+        'ESC': Cancel Building
+        '1', '2': Train Units (must select barrack)
+    `;
+    document.body.appendChild(instructions);
+
+    diagnostic.log('success', 'UI created');
+
+    // ================================================================
+    // Systems
+    // ================================================================
+
+    diagnostic.log('pending', 'Initializing systems...');
+
+    const selectionSystem = new SelectionSystem(world, scene, camera, renderer);
+    diagnostic.log('success', 'SelectionSystem initialized');
+
+    const movementSystem = new MovementSystem(world);
+    diagnostic.log('success', 'MovementSystem initialized');
+
+    const resourceGatheringSystem = new ResourceGatheringSystem(world, gameResources);
+    diagnostic.log('success', 'ResourceGatheringSystem initialized');
+
+    const buildingPlacementSystem = new BuildingPlacementSystem(world, scene, camera, renderer, gameResources);
+    diagnostic.log('success', 'BuildingPlacementSystem initialized');
+
+    const productionSystem = new ProductionSystem(world, scene, gameResources);
+    diagnostic.log('success', 'ProductionSystem initialized');
+
+    diagnostic.log('success', 'All systems initialized');
+
+    // ================================================================
+    // INITIAL GAME SETUP
+    // ================================================================
+
+    diagnostic.log('pending', 'Creating initial game objects...');
+
+    // Create initial units
+    const unitFactory = new UnitFactory(world, scene);
+    unitFactory.createUnit('unit', 10, 0, 10);
+    unitFactory.createUnit('unit', 15, 0, 10);
+    diagnostic.log('success', 'Initial units created');
+
+    // Create initial resources
+    const resourceFactory = new ResourceFactory(world, scene);
+    for (let i = 0; i < 20; i++) {
+        // Scatter resources around the map
+        const x = Math.random() * 80 - 40;
+        const z = Math.random() * 80 - 40;
+        const type = Math.random() < 0.5 ? 'gold' : 'wood';
+        resourceFactory.createResource(type, x, 0, z);
+    }
+    diagnostic.log('success', 'Initial resources created');
+
+    diagnostic.log('success', 'Initial game objects created');
+
+    // ================================================================
+    // Game Loop
+    // ================================================================
+
+    diagnostic.log('success', 'Starting game loop');
+
+    let lastTime = 0;
+    let fpsFrames = 0;
+    let fpsLastTime = 0;
+
+    function gameLoop(time: number) {
+        if (diagnostic.hasReportedErrors()) {
+            return; // Stop the game loop if an error occurred
         }
-        const averageDelta = frameTimes.reduce((a, b) => a + b, 0) / frameTimes.length;
-        const fps = 1 / averageDelta;
-        diagnostic.updateFPS(fps);
-    
-        world.update(delta);
+
+        requestAnimationFrame(gameLoop);
+
+        const deltaTime = time - lastTime;
+        lastTime = time;
+
+        // FPS Calculation
+        fpsFrames++;
+        const fpsElapsed = time - fpsLastTime;
+        if (fpsElapsed >= 1000) {
+            const fps = (fpsFrames / fpsElapsed) * 1000;
+            diagnostic.updateFPS(fps);
+            fpsFrames = 0;
+            fpsLastTime = time;
+        }
+
+        // Update systems
+        selectionSystem.update();
+        movementSystem.update(deltaTime);
+        resourceGatheringSystem.update(deltaTime);
+        buildingPlacementSystem.update();
+        productionSystem.update(deltaTime);
+
+        // Update resource display
+        updateResourceDisplay();
+
+        // Render
         renderer.render(scene, camera);
+    }
+
+    gameLoop(0);
+
+    diagnostic.log('success', 'Game initialized successfully!');
+} catch (error) {
+    diagnostic.log('error', 'Failed to initialize game', error);
+    console.error('Initialization error:', error);
 }
-
-animate();
-
-// Handle window resize
-window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-});
