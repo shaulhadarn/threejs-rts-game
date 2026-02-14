@@ -75,8 +75,9 @@ const movementSystem = new MovementSystem(world, scene, camera, renderer);
 // Connect the systems (movement system needs to know what's selected)
 movementSystem.setSelectionSystem(selectionSystem);
 
-world.addSystem(selectionSystem);
-world.addSystem(movementSystem);
+// Register systems with the SystemManager
+world.getSystemManager().register(selectionSystem);
+world.getSystemManager().register(movementSystem);
 
 // Create unit factory
 const unitFactory = new UnitFactory(world, scene);
