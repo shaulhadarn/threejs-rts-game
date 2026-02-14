@@ -4,6 +4,7 @@ import { ComponentType } from './Component';
 /**
  * Base System interface
  * All systems must implement this interface
+ * Exported for use in game systems (SelectionSystem, MovementSystem, etc.)
  */
 export interface System {
   /**
