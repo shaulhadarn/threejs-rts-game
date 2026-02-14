@@ -1,11 +1,11 @@
 import * as THREE from 'three';
-import { World } from './threejs-rts-game/src/ecs/World';
-import { SelectionSystem } from './threejs-rts-game/src/systems/SelectionSystem';
-import { MovementSystem } from './threejs-rts-game/src/systems/MovementSystem';
-import { UnitFactory } from './threejs-rts-game/src/factories/UnitFactory';
+import { World } from './ecs/World';
+import { SelectionSystem } from './systems/SelectionSystem';
+import { MovementSystem } from './systems/MovementSystem';
+import { UnitFactory } from './factories/UnitFactory';
 
 // Get canvas element
-const canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
+const canvas = document.getElementById('game-canvas')! as HTMLCanvasElement;
 
 // Create scene
 const scene = new THREE.Scene();
@@ -95,25 +95,14 @@ window.addEventListener('resize', () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// Animation loop with ECS updates
-let lastTime = performance.now();
-
+// Animation loop
 function animate() {
     requestAnimationFrame(animate);
     
-    // Calculate delta time
-    const currentTime = performance.now();
-    const deltaTime = (currentTime - lastTime) / 1000; // Convert to seconds
-    lastTime = currentTime;
-    
-    // Update ECS world
+    const deltaTime = 0.016; // ~60fps
     world.update(deltaTime);
     
-    // Render scene
     renderer.render(scene, camera);
 }
 
-// Start animation
 animate();
-
-console.log('Three.js RTS Game initialized with ECS and unit selection/movement!');
