@@ -4,20 +4,15 @@
     box-sizing: border-box;
 }
 
-html, body {
-    width: 100%;
-    height: 100%;
+body {
+    font-family: 'Arial', sans-serif;
     overflow: hidden;
-    font-family: Arial, sans-serif;
 }
 
 #game-canvas {
     display: block;
-    width: 100%;
-    height: 100%;
-    position: fixed;
-    top: 0;
-    left: 0;
+    width: 100vw;
+    height: 100vh;
 }
 
 #ui-overlay {
@@ -25,38 +20,130 @@ html, body {
     top: 0;
     left: 0;
     width: 100%;
+    height: 100%;
     pointer-events: none;
-    z-index: 10;
+    z-index: 1000;
 }
 
-#resources {
-    display: flex;
-    gap: 20px;
-    padding: 10px 20px;
+#resource-display {
+    position: absolute;
+    top: 20px;
+    left: 20px;
     background: rgba(0, 0, 0, 0.7);
+    padding: 15px 20px;
+    border-radius: 8px;
     color: white;
-    font-size: 16px;
-    font-weight: bold;
-    border-radius: 0 0 10px 0;
     pointer-events: auto;
 }
 
-#resources span {
-    display: inline-block;
+.resource-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 18px;
 }
 
-#selection-info {
-    position: fixed;
+.resource-item:last-child {
+    margin-bottom: 0;
+}
+
+.resource-icon {
+    margin-right: 8px;
+    font-size: 20px;
+}
+
+.resource-label {
+    margin-right: 8px;
+    font-weight: bold;
+}
+
+.resource-amount {
+    color: #ffd700;
+    font-weight: bold;
+    min-width: 50px;
+}
+
+.menu-panel {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 15px;
+    border-radius: 8px;
+    color: white;
+    pointer-events: auto;
+}
+
+#building-menu {
     bottom: 20px;
     left: 20px;
-    padding: 15px;
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
+}
+
+#production-menu {
+    bottom: 20px;
+    left: 200px;
+}
+
+.menu-panel h3 {
+    margin-bottom: 10px;
+    font-size: 16px;
+    color: #ffd700;
+    text-transform: uppercase;
+}
+
+.build-btn {
+    display: block;
+    width: 150px;
+    padding: 10px;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
     border-radius: 5px;
-    min-width: 200px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    text-align: center;
+    line-height: 1.4;
+}
+
+.build-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.build-btn:active {
+    transform: translateY(0);
+}
+
+.build-btn:last-child {
+    margin-bottom: 0;
+}
+
+.cost {
+    display: block;
+    font-size: 11px;
+    font-weight: normal;
+    opacity: 0.9;
+    margin-top: 4px;
+}
+
+#info-panel {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 15px;
+    border-radius: 8px;
+    color: white;
+    font-size: 12px;
+    max-width: 250px;
     pointer-events: auto;
 }
 
-#selection-info:empty {
-    display: none;
+#info-panel p {
+    margin-bottom: 6px;
+    line-height: 1.4;
+}
+
+#info-panel p:last-child {
+    margin-bottom: 0;
 }
