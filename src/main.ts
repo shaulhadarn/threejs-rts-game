@@ -2,7 +2,12 @@ import * as THREE from 'three';
 import { World } from './ecs/World';
 import { SelectionSystem } from './systems/SelectionSystem';
 import { MovementSystem } from './systems/MovementSystem';
+import { ResourceGatheringSystem } from './systems/ResourceGatheringSystem';
+import { BuildingPlacementSystem } from './systems/BuildingPlacementSystem';
+import { ProductionSystem } from './systems/ProductionSystem';
 import { UnitFactory } from './factories/UnitFactory';
+import { ResourceFactory } from './factories/ResourceFactory';
+import { GatheringComponent } from './ecs/components/GatheringComponent';
 
 // Get canvas element
 const canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
@@ -18,7 +23,7 @@ const camera = new THREE.PerspectiveCamera(
     0.1,
     1000
 );
-camera.position.set(0, 10, 15);
+camera.position.set(0, 15, 20);
 camera.lookAt(0, 0, 0);
 
 // Create renderer
@@ -65,12 +70,22 @@ gridHelper.material.opacity = 0.2;
 gridHelper.material.transparent = true;
 scene.add(gridHelper);
 
+// Game resources
+const gameResources = { gold: 100, wood: 50 };
+
 // Initialize ECS World
 const world = new World();
+
+// Create factories
+const unitFactory = new UnitFactory(world, scene);
+const resourceFactory = new ResourceFactory(world, scene);
 
 // Create and register systems
 const selectionSystem = new SelectionSystem(world, scene, camera, renderer);
 const movementSystem = new MovementSystem(world, scene, camera, renderer);
+const gatheringSystem = new ResourceGatheringSystem(world, scene, gameResources);
+const buildingSystem = new BuildingPlacementSystem(world, scene, camera, renderer, gameResources);
+const productionSystem = new ProductionSystem(world, scene, gameResources, unitFactory);
 
 // Connect the systems (movement system needs to know what's selected)
 movementSystem.setSelectionSystem(selectionSystem);
@@ -78,16 +93,30 @@ movementSystem.setSelectionSystem(selectionSystem);
 // Register systems with the SystemManager
 world.getSystemManager().register(selectionSystem);
 world.getSystemManager().register(movementSystem);
+world.getSystemManager().register(gatheringSystem);
+world.getSystemManager().register(buildingSystem);
+world.getSystemManager().register(productionSystem);
 
-// Create unit factory
-const unitFactory = new UnitFactory(world, scene);
+// Create test units at different positions with gathering ability
+const unit1 = unitFactory.createUnit(-5, 0.5, -5);
+unit1.addComponent(new GatheringComponent(10, 10));
 
-// Create test units at different positions
-unitFactory.createUnit(-5, 0.5, -5);
-unitFactory.createUnit(0, 0.5, 0);
-unitFactory.createUnit(5, 0.5, 5);
+const unit2 = unitFactory.createUnit(0, 0.5, 0);
+unit2.addComponent(new GatheringComponent(10, 10));
 
-console.log('Created 3 test units');
+const unit3 = unitFactory.createUnit(5, 0.5, 5);
+unit3.addComponent(new GatheringComponent(10, 10));
+
+console.log('Created 3 test units with gathering abilities');
+
+// Create resource nodes
+resourceFactory.createGoldMine(-10, 1, -10);
+resourceFactory.createGoldMine(10, 1, -10);
+resourceFactory.createTree(-10, 0, 10);
+resourceFactory.createTree(10, 0, 10);
+resourceFactory.createTree(0, 0, 15);
+
+console.log('Created resource nodes');
 
 // Handle window resize
 window.addEventListener('resize', () => {
@@ -96,25 +125,23 @@ window.addEventListener('resize', () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// Animation loop with ECS updates
+// Animation loop
 let lastTime = performance.now();
 
 function animate() {
     requestAnimationFrame(animate);
     
-    // Calculate delta time
     const currentTime = performance.now();
     const deltaTime = (currentTime - lastTime) / 1000; // Convert to seconds
     lastTime = currentTime;
     
-    // Update ECS world
+    // Update all systems
     world.update(deltaTime);
     
-    // Render scene
+    // Render
     renderer.render(scene, camera);
 }
 
-// Start animation
+// Start the game
+console.log('Starting Three.js RTS Game...');
 animate();
-
-console.log('Three.js RTS Game initialized with ECS and unit selection/movement!');
