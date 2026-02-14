@@ -80,7 +80,7 @@ class DiagnosticOverlay {
 
         let icon = '';
         let color = '';
-        
+
         switch (status) {
             case 'success':
                 icon = '[✓]';
@@ -98,7 +98,7 @@ class DiagnosticOverlay {
         }
 
         item.innerHTML = `<span style="color: ${color}; font-weight: bold;">${icon}</span> ${message}`;
-        
+
         if (error) {
             const errorDetail = document.createElement('div');
             errorDetail.style.cssText = `
@@ -124,7 +124,7 @@ class DiagnosticOverlay {
         }
 
         this.messageList.appendChild(item);
-        
+
         // Log to console as well
         const consoleMsg = `[Diagnostic] ${icon} ${message}`;
         if (status === 'error') {
@@ -141,7 +141,7 @@ class DiagnosticOverlay {
     checkWebGLSupport(): { supported: boolean; message: string; context?: any } {
         const canvas = document.createElement('canvas');
         let gl: any;
-        
+
         try {
             gl = canvas.getContext('webgl2') || canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
         } catch (e) {
@@ -149,9 +149,9 @@ class DiagnosticOverlay {
         }
 
         if (!gl) {
-            return { 
-                supported: false, 
-                message: 'WebGL not supported by browser' 
+            return {
+                supported: false,
+                message: 'WebGL not supported by browser'
             };
         }
 
@@ -227,7 +227,7 @@ try {
     // Create renderer with comprehensive error handling
     let renderer: THREE.WebGLRenderer;
     try {
-        renderer = new THREE.WebGLRenderer({ 
+        renderer = new THREE.WebGLRenderer({
             canvas: canvas as HTMLCanvasElement,
             antialias: !isMobile
         });
@@ -238,7 +238,7 @@ try {
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         }
         diagnostics.log('success', `Renderer created (${window.innerWidth}x${window.innerHeight})`);
-        
+
         // Verify WebGL context
         const gl = renderer.getContext();
         if (!gl) {
@@ -269,7 +269,7 @@ try {
 
     // Create terrain
     const terrainGeometry = new THREE.PlaneGeometry(50, 50, 10, 10);
-    const terrainMaterial = new THREE.MeshStandardMaterial({ 
+    const terrainMaterial = new THREE.MeshStandardMaterial({
         color: 0x228b22,
         roughness: 0.8,
         metalness: 0.2
@@ -284,8 +284,8 @@ try {
     const world = new World();
     diagnostics.log('success', 'ECS World created');
 
-    // Initialize systems
-    const selectionSystem = new SelectionSystem(world, scene, camera, canvas as HTMLCanvasElement);
+    // Initialize systems - FIXED: Pass renderer instead of canvas to SelectionSystem
+    const selectionSystem = new SelectionSystem(world, scene, camera, renderer);
     const movementSystem = new MovementSystem(world);
     const resourceGatheringSystem = new ResourceGatheringSystem(world);
     const buildingPlacementSystem = new BuildingPlacementSystem(world, scene, camera, canvas as HTMLCanvasElement);
@@ -362,29 +362,29 @@ try {
     // Mobile touch controls
     if (isMobile) {
         diagnostics.log('pending', 'Setting up mobile touch controls...');
-        
+
         let touchStartTime = 0;
         let touchStartPos = { x: 0, y: 0 };
         const LONG_PRESS_DURATION = 500;
-        
+
         canvas.addEventListener('touchstart', (event) => {
             event.preventDefault();
             touchStartTime = Date.now();
             const touch = event.touches[0];
             touchStartPos = { x: touch.clientX, y: touch.clientY };
         });
-        
+
         canvas.addEventListener('touchend', (event) => {
             event.preventDefault();
             const touchDuration = Date.now() - touchStartTime;
             const touch = event.changedTouches[0];
             const touchEndPos = { x: touch.clientX, y: touch.clientY };
-            
+
             const distance = Math.sqrt(
-                Math.pow(touchEndPos.x - touchStartPos.x, 2) + 
+                Math.pow(touchEndPos.x - touchStartPos.x, 2) +
                 Math.pow(touchEndPos.y - touchStartPos.y, 2)
             );
-            
+
             if (distance < 10) {
                 if (touchDuration < LONG_PRESS_DURATION) {
                     const mouseEvent = new MouseEvent('click', {
@@ -401,7 +401,7 @@ try {
                 }
             }
         });
-        
+
         diagnostics.log('success', 'Mobile touch controls configured');
     }
 
@@ -409,7 +409,7 @@ try {
     diagnostics.log('pending', 'Starting animation loop...');
     animate();
     diagnostics.log('success', 'Game initialization complete! Animation loop running.');
-    
+
     // Hide diagnostics after 3 seconds if no errors
     diagnostics.hide();
 
