@@ -9,7 +9,12 @@ import * as THREE from 'three';
  * SelectionSystem handles unit selection via mouse clicks
  * Uses raycasting to detect clicks on selectable entities
  */
-export class SelectionSystem extends System {
+export class SelectionSystem implements System {
+  public requiredComponents = ['Selectable', 'Renderable'];
+  public enabled = true;
+  public priority = 0;
+  
+  private world: World;
   private scene: THREE.Scene;
   private camera: THREE.Camera;
   private renderer: THREE.WebGLRenderer;
@@ -18,7 +23,7 @@ export class SelectionSystem extends System {
   private currentlySelected: number | null = null;
 
   constructor(world: World, scene: THREE.Scene, camera: THREE.Camera, renderer: THREE.WebGLRenderer) {
-    super(world);
+    this.world = world;
     this.scene = scene;
     this.camera = camera;
     this.renderer = renderer;
@@ -99,7 +104,7 @@ export class SelectionSystem extends System {
     }
   }
 
-  update(deltaTime: number): void {
+  update(deltaTime: number, entities: any[]): void {
     // Selection is handled via events, no per-frame update needed
     // But we could add hover effects here in the future
   }
