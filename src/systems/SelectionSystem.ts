@@ -1,5 +1,6 @@
 import { System } from '../ecs/System';
 import { World } from '../ecs/World';
+import { Entity } from '../ecs/Entity';
 import { SelectableComponent } from '../ecs/components/SelectableComponent';
 import { RenderableComponent } from '../ecs/components/RenderableComponent';
 import { TransformComponent } from '../ecs/components/TransformComponent';
@@ -9,7 +10,12 @@ import * as THREE from 'three';
  * SelectionSystem handles unit selection via mouse clicks
  * Uses raycasting to detect clicks on selectable entities
  */
-export class SelectionSystem extends System {
+export class SelectionSystem implements System {
+  requiredComponents = ['Selectable' as const];
+  enabled = true;
+  priority = 0;
+
+  private world: World;
   private scene: THREE.Scene;
   private camera: THREE.Camera;
   private renderer: THREE.WebGLRenderer;
@@ -18,7 +24,7 @@ export class SelectionSystem extends System {
   private currentlySelected: number | null = null;
 
   constructor(world: World, scene: THREE.Scene, camera: THREE.Camera, renderer: THREE.WebGLRenderer) {
-    super(world);
+    this.world = world;
     this.scene = scene;
     this.camera = camera;
     this.renderer = renderer;
@@ -49,7 +55,7 @@ export class SelectionSystem extends System {
     this.raycaster.setFromCamera(this.mouse, this.camera);
 
     // Get all selectable entities
-    const selectableEntities = this.world.getEntitiesWithComponent('Selectable');
+    const selectableEntities = this.world.queryEntities('Selectable');
     
     // Build array of meshes to test
     const selectableMeshes: { mesh: THREE.Mesh; entityId: number }[] = [];
@@ -99,7 +105,7 @@ export class SelectionSystem extends System {
     }
   }
 
-  update(deltaTime: number): void {
+  update(deltaTime: number, entities: Entity[]): void {
     // Selection is handled via events, no per-frame update needed
     // But we could add hover effects here in the future
   }
