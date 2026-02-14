@@ -1,0 +1,28 @@
+{
+  "name": "threejs-rts-game",
+  "version": "0.1.0",
+  "description": "Real-time strategy game built with Three.js, inspired by Command & Conquer and Warcraft",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [
+    "threejs",
+    "rts",
+    "game",
+    "typescript",
+    "webgl"
+  ],
+  "author": "Shaul Hadar",
+  "license": "MIT",
+  "dependencies": {
+    "three": "^0.160.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.160.0",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.11"
+  }
+}
