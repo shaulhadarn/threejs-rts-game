@@ -10,11 +10,44 @@
 <body>
     <canvas id="game-canvas"></canvas>
     <div id="ui-overlay">
-        <div id="resources">
-            <span>Gold: <span id="gold">500</span></span>
-            <span>Wood: <span id="wood">300</span></span>
+        <div id="resource-display">
+            <div class="resource-item">
+                <span class="resource-icon">⚜️</span>
+                <span class="resource-label">Gold:</span>
+                <span id="gold-amount" class="resource-amount">100</span>
+            </div>
+            <div class="resource-item">
+                <span class="resource-icon">🌲</span>
+                <span class="resource-label">Wood:</span>
+                <span id="wood-amount" class="resource-amount">50</span>
+            </div>
         </div>
-        <div id="selection-info"></div>
+        
+        <div id="building-menu" class="menu-panel">
+            <h3>Buildings</h3>
+            <button id="build-townhall" class="build-btn">
+                Town Hall<br>
+                <span class="cost">Gold: 200, Wood: 150</span>
+            </button>
+            <button id="build-barracks" class="build-btn">
+                Barracks<br>
+                <span class="cost">Gold: 100, Wood: 80</span>
+            </button>
+        </div>
+        
+        <div id="production-menu" class="menu-panel">
+            <h3>Production</h3>
+            <button id="train-worker" class="build-btn">
+                Train Worker<br>
+                <span class="cost">Gold: 50</span>
+            </button>
+        </div>
+        
+        <div id="info-panel">
+            <p>Click to select units | Right-click to move</p>
+            <p>Units auto-gather nearby resources</p>
+            <p>Press ESC to cancel building placement</p>
+        </div>
     </div>
     <script type="module" src="/src/main.ts"></script>
 </body>
