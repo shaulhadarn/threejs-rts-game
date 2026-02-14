@@ -42,4 +42,3 @@ export abstract class BaseComponent implements Component {
 
 // Re-export everything explicitly
 export type { Component as ComponentInterface };
-export { ComponentType, BaseComponent };
